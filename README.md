@@ -80,7 +80,7 @@ python app.py
 **Karishma Singh**<br>
 **Navya Sharma**<br>
 **Samarth Jindal**
-  
+
 ## 📸 Screenshots
 
 ### 🔐 Login Page
@@ -109,4 +109,4 @@ python app.py
 
 ### 🤖 Detector
 
-![detector](images/detector.png)
+![detector](images/predictor.png)
