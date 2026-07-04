@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Panel - Health Watch</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f5f7fa; color: #333; }
+.container { display: flex; min-height: 100vh; }
+.sidebar { width: 250px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 25px 20px; flex-shrink: 0; }
+.sidebar-brand { font-size: 19px; font-weight: bold; margin-bottom: 26px; border-bottom: 2px solid rgba(255,255,255,0.2); padding-bottom: 14px; }
+.nav-menu { list-style: none; }
+.nav-menu li { margin-bottom: 6px; }
+.nav-menu a { color: white; text-decoration: none; display: block; padding: 11px 14px; border-radius: 8px; transition: all 0.2s; font-size: 13.5px; }
+.nav-menu a:hover, .nav-menu a.active { background: rgba(255,255,255,0.22); transform: translateX(4px); }
+.logout-btn { margin-top: 26px; width: 100%; padding: 11px; background: rgba(255,255,255,0.2); color: white; border: none; border-radius: 8px; cursor: pointer; }
+.main-content { flex: 1; overflow-y: auto; }
+.header { background: white; padding: 22px 30px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); display: flex; justify-content: space-between; align-items: center; }
+.header h1 { font-size: 24px; }
+.user-role { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 5px 14px; border-radius: 20px; font-size: 11.5px; }
+.content { padding: 28px 30px; }
+.tabs { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+.tab-btn { padding: 9px 18px; border: 2px solid #ddd; background: white; border-radius: 8px; cursor: pointer; font-size: 12.5px; font-weight: 600; }
+.tab-btn.active { border-color: #667eea; background: #667eea; color: white; }
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+.table-card { background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); overflow: hidden; }
+table { width: 100%; border-collapse: collapse; }
+thead th { padding: 12px 18px; text-align: left; font-size: 11px; color: #888; text-transform: uppercase; background: #fafafa; }
+tbody td { padding: 12px 18px; border-top: 1px solid #f0f0f0; font-size: 13px; }
+.role-pill { padding: 3px 10px; border-radius: 10px; font-size: 11px; font-weight: 600; background: #ede9fe; color: #667eea; }
+.btn-danger { padding: 5px 11px; background: #ffe0e0; color: #c33; border: none; border-radius: 6px; cursor: pointer; font-size: 11px; }
+.empty-row { text-align: center; padding: 30px; color: #999; }
+.risk-pill { padding: 3px 10px; border-radius: 10px; font-size: 11px; font-weight: 600; }
+.risk-Low { background: #e3f2fd; color: #1565c0; }
+.risk-Medium { background: #fff4d6; color: #ff8c00; }
+.risk-High { background: #ffe0e0; color: #c33; }
+</style>
+</head>
+<body>
+<div class="container">
+    <div class="sidebar">
+        <div class="sidebar-brand">🏥 Health Watch</div>
+        <ul class="nav-menu">
+            <li><a href="/dashboard">📊 Dashboard</a></li>
+            <li><a href="/villages">🏘️ Villages</a></li>
+            <li><a href="/health-report">📋 Health Report</a></li>
+            <li><a href="/water-quality">💧 Water Quality</a></li>
+            <li><a href="/prediction">🤖 AI Prediction</a></li>
+            <li><a href="/map">🗺️ Map</a></li>
+            <li><a href="/analytics">📈 Analytics</a></li>
+            <li><a href="/reports">📄 Reports</a></li>
+            <li><a href="/alerts">🚨 Alerts</a></li>
+            <li><a href="/awareness">📚 Awareness</a></li>
+            <li><a href="/admin" class="active">⚙️ Admin Panel</a></li>
+        </ul>
+        <button class="logout-btn" onclick="location.href='/logout'">Logout</button>
+    </div>
+
+    <div class="main-content">
+        <div class="header">
+            <h1>⚙️ Admin Panel</h1>
+            <span class="user-role">{{ role }}</span>
+        </div>
+
+        <div class="content">
+            <div class="tabs">
+                <button class="tab-btn active" onclick="showTab('users', this)">Manage Users</button>
+                <button class="tab-btn" onclick="showTab('villages', this)">Villages</button>
+                <button class="tab-btn" onclick="showTab('predictions', this)">Predictions</button>
+                <button class="tab-btn" onclick="showTab('alerts', this)">Alerts</button>
+            </div>
+
+            <div class="tab-panel active" id="panel-users">
+                <div class="table-card">
+                    <table>
+                        <thead><tr><th>Name</th><th>Email</th><th>Username</th><th>Role</th><th>Action</th></tr></thead>
+                        <tbody id="usersBody"><tr><td class="empty-row" colspan="5">Loading...</td></tr></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="tab-panel" id="panel-villages">
+                <div class="table-card">
+                    <table>
+                        <thead><tr><th>Name</th><th>State</th><th>Region</th><th>Population</th><th>Water Source</th></tr></thead>
+                        <tbody id="villagesBody"><tr><td class="empty-row" colspan="5">Loading...</td></tr></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="tab-panel" id="panel-predictions">
+                <div class="table-card">
+                    <table>
+                        <thead><tr><th>Village</th><th>Risk Level</th><th>Probability</th><th>Date</th></tr></thead>
+                        <tbody id="predictionsBody"><tr><td class="empty-row" colspan="4">Loading...</td></tr></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="tab-panel" id="panel-alerts">
+                <div class="table-card">
+                    <table>
+                        <thead><tr><th>Village</th><th>Type</th><th>Message</th><th>Status</th></tr></thead>
+                        <tbody id="alertsBody"><tr><td class="empty-row" colspan="4">Loading...</td></tr></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function showTab(name, btn) {
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('panel-' + name).classList.add('active');
+    btn.classList.add('active');
+}
+
+async function loadAdminData() {
+    const res = await fetch('/api/admin/overview');
+    const data = await res.json();
+    if (!data.success) {
+        document.querySelector('.content').innerHTML = '<p style="color:#c33;">Admin access required.</p>';
+        return;
+    }
+
+    document.getElementById('usersBody').innerHTML = data.users.map(u => `
+        <tr><td>${u.name}</td><td>${u.email}</td><td>${u.username}</td><td><span class="role-pill">${u.role}</span></td>
+        <td><button class="btn-danger" onclick="deleteUser(${u.id})">Remove</button></td></tr>
+    `).join('') || '<tr><td class="empty-row" colspan="5">No users found.</td></tr>';
+
+    document.getElementById('villagesBody').innerHTML = data.villages.map(v => `
+        <tr><td>${v.name}</td><td>${v.state}</td><td>${v.region}</td><td>${v.population ? v.population.toLocaleString() : '-'}</td><td>${v.water_source || '-'}</td></tr>
+    `).join('') || '<tr><td class="empty-row" colspan="5">No villages found.</td></tr>';
+
+    document.getElementById('predictionsBody').innerHTML = data.predictions.map(p => `
+        <tr><td>${p.village_name}</td><td><span class="risk-pill risk-${p.risk_level}">${p.risk_level}</span></td><td>${(p.probability*100).toFixed(0)}%</td><td>${p.prediction_date}</td></tr>
+    `).join('') || '<tr><td class="empty-row" colspan="4">No predictions yet.</td></tr>';
+
+    document.getElementById('alertsBody').innerHTML = data.alerts.map(a => `
+        <tr><td>${a.village_name}</td><td>${a.alert_type}</td><td>${a.message}</td><td>${a.status}</td></tr>
+    `).join('') || '<tr><td class="empty-row" colspan="4">No alerts yet.</td></tr>';
+}
+
+async function deleteUser(id) {
+    if (!confirm('Remove this user?')) return;
+    await fetch(`/api/admin/users/${id}`, { method: 'DELETE' });
+    loadAdminData();
+}
+
+loadAdminData();
+</script>
+</body>
+</html>

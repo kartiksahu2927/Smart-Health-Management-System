@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard - Health Watch</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f5f7fa; color: #333; }
+.container { display: flex; min-height: 100vh; }
+.sidebar {
+    width: 250px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;
+    padding: 25px 20px; box-shadow: 2px 0 10px rgba(0,0,0,0.1); flex-shrink: 0;
+}
+.sidebar-brand { font-size: 19px; font-weight: bold; margin-bottom: 26px; border-bottom: 2px solid rgba(255,255,255,0.2); padding-bottom: 14px; }
+.nav-menu { list-style: none; }
+.nav-menu li { margin-bottom: 6px; }
+.nav-menu a { color: white; text-decoration: none; display: block; padding: 11px 14px; border-radius: 8px; transition: all 0.2s; font-size: 13.5px; }
+.nav-menu a:hover, .nav-menu a.active { background: rgba(255,255,255,0.22); transform: translateX(4px); }
+.logout-btn { margin-top: 26px; width: 100%; padding: 11px; background: rgba(255,255,255,0.2); color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 13.5px; }
+.logout-btn:hover { background: rgba(255,255,255,0.3); }
+.main-content { flex: 1; overflow-y: auto; }
+.header { background: white; padding: 22px 30px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); display: flex; justify-content: space-between; align-items: center; }
+.header h1 { font-size: 24px; }
+.header p { color: #666; margin-top: 4px; font-size: 13.5px; }
+.user-info { text-align: right; }
+.user-info p { color: #666; font-size: 13.5px; margin-bottom: 6px; }
+.user-role { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 5px 14px; border-radius: 20px; font-size: 11.5px; font-weight: 600; }
+.content { padding: 28px 30px; }
+.stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 18px; margin-bottom: 28px; }
+.stat-card { background: white; padding: 22px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); border-left: 5px solid #667eea; transition: transform 0.2s; }
+.stat-card:hover { transform: translateY(-4px); }
+.stat-card.warn { border-left-color: #ff6b6b; }
+.stat-card.ok { border-left-color: #51cf66; }
+.stat-label { color: #666; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+.stat-value { font-size: 30px; font-weight: bold; color: #333; }
+.quick-actions { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 14px; margin-bottom: 28px; }
+.action-btn { background: white; padding: 18px; border-radius: 12px; border: 2px solid #eee; text-align: center; text-decoration: none; color: #333; transition: all 0.2s; font-size: 12.5px; font-weight: 600; }
+.action-btn:hover { border-color: #667eea; box-shadow: 0 4px 12px rgba(102,126,234,0.15); }
+.action-icon { font-size: 26px; margin-bottom: 8px; }
+.charts-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); gap: 20px; }
+.chart-card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+.chart-title { font-size: 15px; font-weight: 600; margin-bottom: 14px; }
+.chart-container { position: relative; height: 280px; }
+@media (max-width: 768px) {
+    .container { flex-direction: column; }
+    .sidebar { width: 100%; }
+}
+</style>
+</head>
+<body>
+<div class="container">
+    <div class="sidebar">
+        <div class="sidebar-brand">🏥 Health Watch</div>
+        <ul class="nav-menu">
+            <li><a href="/dashboard" class="active">📊 Dashboard</a></li>
+            <li><a href="/villages">🏘️ Villages</a></li>
+            <li><a href="/health-report">📋 Health Report</a></li>
+            <li><a href="/water-quality">💧 Water Quality</a></li>
+            <li><a href="/prediction">🤖 AI Prediction</a></li>
+            <li><a href="/map">🗺️ Map</a></li>
+            <li><a href="/analytics">📈 Analytics</a></li>
+            <li><a href="/reports">📄 Reports</a></li>
+            <li><a href="/alerts">🚨 Alerts</a></li>
+            <li><a href="/awareness">📚 Awareness</a></li>
+            {% if role == 'Admin' %}<li><a href="/admin">⚙️ Admin Panel</a></li>{% endif %}
+        </ul>
+        <button class="logout-btn" onclick="location.href='/logout'">Logout</button>
+    </div>
+
+    <div class="main-content">
+        <div class="header">
+            <div>
+                <h1>Dashboard</h1>
+                <p>Real-time disease outbreak monitoring across India</p>
+            </div>
+            <div class="user-info">
+                <p>Welcome, <strong>{{ name }}</strong></p>
+                <span class="user-role">{{ role }}</span>
+            </div>
+        </div>
+
+        <div class="content">
+            <div class="quick-actions">
+                <a href="/villages" class="action-btn"><div class="action-icon">🏘️</div>Villages</a>
+                <a href="/health-report" class="action-btn"><div class="action-icon">📋</div>Health Report</a>
+                <a href="/water-quality" class="action-btn"><div class="action-icon">💧</div>Water Quality</a>
+                <a href="/prediction" class="action-btn"><div class="action-icon">🤖</div>AI Prediction</a>
+                <a href="/map" class="action-btn"><div class="action-icon">🗺️</div>Live Map</a>
+                <a href="/analytics" class="action-btn"><div class="action-icon">📈</div>Analytics</a>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-label">Total Reports Submitted</div>
+                    <div class="stat-value">{{ total_reports }}</div>
+                </div>
+                <div class="stat-card warn">
+                    <div class="stat-label">High-Risk Villages</div>
+                    <div class="stat-value" id="highRiskVillages">{{ high_risk_villages }}</div>
+                </div>
+                <div class="stat-card warn">
+                    <div class="stat-label">Active Alerts</div>
+                    <div class="stat-value">{{ active_alerts }}</div>
+                </div>
+                <div class="stat-card ok">
+                    <div class="stat-label">Water Sources Monitored</div>
+                    <div class="stat-value">{{ villages_monitored }}</div>
+                </div>
+            </div>
+
+            <div class="charts-grid">
+                <div class="chart-card">
+                    <div class="chart-title">📊 Disease Distribution (Live)</div>
+                    <div class="chart-container"><canvas id="diseaseChart"></canvas></div>
+                </div>
+                <div class="chart-card">
+                    <div class="chart-title">⚠️ Risk Level Distribution</div>
+                    <div class="chart-container"><canvas id="riskChart"></canvas></div>
+                </div>
+                <div class="chart-card">
+                    <div class="chart-title">🌍 Cases by Region</div>
+                    <div class="chart-container"><canvas id="regionChart"></canvas></div>
+                </div>
+                <div class="chart-card">
+                    <div class="chart-title">🔮 Recent Outbreak Predictions</div>
+                    <div id="predictionsList" style="font-size:13px; color:#666;">Loading...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let charts = {};
+
+async function loadDashboard() {
+    try {
+        const res = await fetch('/api/analytics');
+        const data = await res.json();
+        if (!data.success) return;
+
+        // Disease distribution
+        const dCtx = document.getElementById('diseaseChart').getContext('2d');
+        if (charts.disease) charts.disease.destroy();
+        const diseaseLabels = Object.keys(data.disease_totals).map(d => d.replace('_',' ').toUpperCase());
+        charts.disease = new Chart(dCtx, {
+            type: 'doughnut',
+            data: { labels: diseaseLabels, datasets: [{ data: Object.values(data.disease_totals),
+                backgroundColor: ['#ff6b6b','#ffd93d','#51cf66','#4dabf7','#ff8c42'], borderColor: 'white', borderWidth: 3 }] },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { font: { size: 11 } } } } }
+        });
+
+        // Risk distribution
+        const riskCounts = { Critical: 0, High: 0, Medium: 0, Low: 0 };
+        data.all_locations.forEach(l => riskCounts[l.risk_level]++);
+        const rCtx = document.getElementById('riskChart').getContext('2d');
+        if (charts.risk) charts.risk.destroy();
+        charts.risk = new Chart(rCtx, {
+            type: 'pie',
+            data: { labels: Object.keys(riskCounts), datasets: [{ data: Object.values(riskCounts),
+                backgroundColor: ['#ff6b6b','#ffd93d','#51cf66','#4dabf7'], borderColor: 'white', borderWidth: 3 }] },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { font: { size: 11 } } } } }
+        });
+
+        document.getElementById('highRiskVillages').textContent =
+            data.all_locations.filter(l => l.risk_level === 'Critical' || l.risk_level === 'High').length;
+
+        // Region chart
+        const regions = Object.keys(data.region_summary);
+        const regionCases = regions.map(r => data.region_summary[r].total_cases);
+        const gCtx = document.getElementById('regionChart').getContext('2d');
+        if (charts.region) charts.region.destroy();
+        charts.region = new Chart(gCtx, {
+            type: 'bar',
+            data: { labels: regions, datasets: [{ label: 'Cases', data: regionCases, backgroundColor: '#667eea', borderRadius: 5 }] },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+        });
+
+        // Recent predictions (top 5 highest-risk live locations as "predictions")
+        const top5 = [...data.all_locations].sort((a,b) => b.total_cases - a.total_cases).slice(0,5);
+        const list = document.getElementById('predictionsList');
+        list.innerHTML = top5.map(l => {
+            const color = { Critical: '#ff6b6b', High: '#ffd93d', Medium: '#51cf66', Low: '#4dabf7' }[l.risk_level];
+            return `<div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid #eee;">
+                <span>${l.name}, ${l.state}</span>
+                <span style="color:${color}; font-weight:600;">${l.risk_level}</span>
+            </div>`;
+        }).join('');
+    } catch (err) {
+        console.error('Dashboard load error:', err);
+    }
+}
+
+loadDashboard();
+setInterval(loadDashboard, 60000);
+</script>
+</body>
+</html>

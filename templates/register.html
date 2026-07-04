@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Register - Smart Health Surveillance System</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh; display: flex; justify-content: center; align-items: center; padding: 20px;
+}
+.register-container {
+    background: white; border-radius: 14px; box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+    width: 100%; max-width: 540px; padding: 40px;
+}
+.header { text-align: center; margin-bottom: 26px; }
+.header h1 { color: #333; font-size: 26px; margin-bottom: 8px; }
+.header p { color: #666; font-size: 14px; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.form-group { margin-bottom: 16px; }
+label { display: block; color: #333; font-weight: 600; margin-bottom: 6px; font-size: 13px; }
+input, select {
+    width: 100%; padding: 11px 13px; border: 2px solid #e0e0e0; border-radius: 8px;
+    font-size: 14px; font-family: inherit; transition: border-color 0.2s; background: white;
+}
+input:focus, select:focus { outline: none; border-color: #667eea; }
+.form-hint { font-size: 11.5px; color: #999; margin-top: 4px; }
+.submit-btn {
+    width: 100%; padding: 13px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white; border: none; border-radius: 8px; font-size: 15px; font-weight: 600;
+    cursor: pointer; transition: transform 0.15s; margin-top: 6px;
+}
+.submit-btn:hover { transform: translateY(-2px); }
+.error-message, .success-message { padding: 12px; border-radius: 8px; margin-bottom: 18px; display: none; font-size: 13px; }
+.error-message { background: #fee; color: #c33; }
+.success-message { background: #efe; color: #3a3; }
+.login-link { text-align: center; margin-top: 20px; color: #666; font-size: 13.5px; }
+.login-link a { color: #667eea; text-decoration: none; font-weight: 600; }
+.role-description {
+    background: #f7f7fb; padding: 10px; border-radius: 8px; font-size: 11.5px;
+    color: #666; margin-top: 8px; border-left: 3px solid #667eea;
+}
+optgroup { font-weight: 700; color: #667eea; font-style: normal; }
+option { color: #333; font-weight: 400; }
+</style>
+</head>
+<body>
+<div class="register-container">
+    <div class="header">
+        <h1>🏥 Health Watch</h1>
+        <p>Create Your Account</p>
+    </div>
+
+    <div class="error-message" id="errorMsg"></div>
+    <div class="success-message" id="successMsg"></div>
+
+    <form id="registerForm">
+        <div class="form-row">
+            <div class="form-group">
+                <label for="name">Full Name</label>
+                <input type="text" id="name" required>
+            </div>
+            <div class="form-group">
+                <label for="mobile">Mobile Number</label>
+                <input type="text" id="mobile" placeholder="10-digit number" required>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="email">Email</label>
+            <input type="email" id="email" required>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label for="username">Username</label>
+                <input type="text" id="username" required>
+            </div>
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" required>
+                <div class="form-hint">At least 8 characters</div>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="role">Role</label>
+            <select id="role" required onchange="updateRoleDescription()">
+                <option value="">Select your role</option>
+                <option value="Admin">Admin</option>
+                <option value="Health Officer">Health Officer</option>
+                <option value="ASHA Worker">ASHA Worker</option>
+                <option value="Community Volunteer">Community Volunteer</option>
+            </select>
+            <div class="role-description" id="roleDesc">Select a role to see its description.</div>
+        </div>
+
+        <div class="form-group">
+            <label for="village">Village / Area (all states &amp; union territories)</label>
+            <select id="village" required>
+                <option value="">Select your location</option>
+                {% for region, items in grouped_villages.items() %}
+                <optgroup label="{{ region }}">
+                    {% for v in items %}
+                    <option value="{{ v.id }}">{{ v.name }}, {{ v.state }}</option>
+                    {% endfor %}
+                </optgroup>
+                {% endfor %}
+            </select>
+            <div class="form-hint">All 28 states and 8 union territories are listed above, grouped by region.</div>
+        </div>
+
+        <button type="submit" class="submit-btn">Create Account</button>
+    </form>
+
+    <div class="login-link">
+        Already have an account? <a href="/login">Login here</a>
+    </div>
+</div>
+
+<script>
+const roleDescriptions = {
+    'Admin': 'Full system access: manage users, villages, reports, predictions, and alerts.',
+    'Health Officer': 'Reviews health reports and predictions, manages alerts for their district.',
+    'ASHA Worker': 'Submits health and water quality reports from the field.',
+    'Community Volunteer': 'Reports symptoms and water issues from the community.',
+    '': 'Select a role to see its description.'
+};
+
+function updateRoleDescription() {
+    const role = document.getElementById('role').value;
+    document.getElementById('roleDesc').textContent = roleDescriptions[role] || '';
+}
+
+document.getElementById('registerForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const errorMsg = document.getElementById('errorMsg');
+    const successMsg = document.getElementById('successMsg');
+    errorMsg.style.display = 'none';
+    successMsg.style.display = 'none';
+
+    const payload = {
+        name: document.getElementById('name').value,
+        mobile: document.getElementById('mobile').value,
+        email: document.getElementById('email').value,
+        username: document.getElementById('username').value,
+        password: document.getElementById('password').value,
+        role: document.getElementById('role').value,
+        village_id: document.getElementById('village').value
+    };
+
+    if (payload.password.length < 8) {
+        errorMsg.textContent = 'Password must be at least 8 characters.';
+        errorMsg.style.display = 'block';
+        return;
+    }
+
+    try {
+        const res = await fetch('/register', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (data.success) {
+            successMsg.textContent = data.message;
+            successMsg.style.display = 'block';
+            setTimeout(() => window.location.href = '/login', 1200);
+        } else {
+            errorMsg.textContent = data.message;
+            errorMsg.style.display = 'block';
+        }
+    } catch (err) {
+        errorMsg.textContent = 'Connection error: ' + err.message;
+        errorMsg.style.display = 'block';
+    }
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Analytics - Health Watch</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f5f7fa; color: #333; }
+.container { display: flex; min-height: 100vh; }
+.sidebar { width: 250px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 25px 20px; flex-shrink: 0; }
+.sidebar-brand { font-size: 19px; font-weight: bold; margin-bottom: 26px; border-bottom: 2px solid rgba(255,255,255,0.2); padding-bottom: 14px; }
+.nav-menu { list-style: none; }
+.nav-menu li { margin-bottom: 6px; }
+.nav-menu a { color: white; text-decoration: none; display: block; padding: 11px 14px; border-radius: 8px; transition: all 0.2s; font-size: 13.5px; }
+.nav-menu a:hover, .nav-menu a.active { background: rgba(255,255,255,0.22); transform: translateX(4px); }
+.logout-btn { margin-top: 26px; width: 100%; padding: 11px; background: rgba(255,255,255,0.2); color: white; border: none; border-radius: 8px; cursor: pointer; }
+.main-content { flex: 1; overflow-y: auto; }
+.header { background: white; padding: 22px 30px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); display: flex; justify-content: space-between; align-items: center; }
+.header h1 { font-size: 24px; }
+.header p { color: #666; margin-top: 4px; font-size: 13px; }
+.user-role { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 5px 14px; border-radius: 20px; font-size: 11.5px; }
+.content { padding: 28px 30px; }
+.metrics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 26px; }
+.metric-card { background: white; padding: 20px; border-radius: 12px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+.metric-label { font-size: 11px; color: #888; text-transform: uppercase; margin-bottom: 8px; letter-spacing: 0.5px; }
+.metric-value { font-size: 26px; font-weight: bold; color: #667eea; }
+.charts-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); gap: 20px; margin-bottom: 26px; }
+.chart-card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+.chart-title { font-size: 15px; font-weight: 600; margin-bottom: 14px; }
+.chart-container { position: relative; height: 320px; }
+.table-card { background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); overflow: hidden; }
+.table-header { padding: 18px 22px; background: #f9f9f9; border-bottom: 2px solid #eee; font-size: 15px; font-weight: 600; }
+table { width: 100%; border-collapse: collapse; }
+thead th { padding: 12px 20px; text-align: left; font-size: 11px; color: #888; text-transform: uppercase; background: #fafafa; }
+tbody td { padding: 12px 20px; border-top: 1px solid #f0f0f0; font-size: 13px; }
+tbody tr:hover { background: #fafafe; }
+.cell-strong { font-weight: 600; color: #667eea; }
+.risk-pill { padding: 4px 11px; border-radius: 12px; font-size: 11px; font-weight: 600; }
+.risk-Critical, .risk-High { background: #ffe0e0; color: #c33; }
+.risk-Medium { background: #fff4d6; color: #ff8c00; }
+.risk-Low { background: #e3f2fd; color: #1565c0; }
+</style>
+</head>
+<body>
+<div class="container">
+    <div class="sidebar">
+        <div class="sidebar-brand">🏥 Health Watch</div>
+        <ul class="nav-menu">
+            <li><a href="/dashboard">📊 Dashboard</a></li>
+            <li><a href="/villages">🏘️ Villages</a></li>
+            <li><a href="/health-report">📋 Health Report</a></li>
+            <li><a href="/water-quality">💧 Water Quality</a></li>
+            <li><a href="/prediction">🤖 AI Prediction</a></li>
+            <li><a href="/map">🗺️ Map</a></li>
+            <li><a href="/analytics" class="active">📈 Analytics</a></li>
+            <li><a href="/reports">📄 Reports</a></li>
+            <li><a href="/alerts">🚨 Alerts</a></li>
+            <li><a href="/awareness">📚 Awareness</a></li>
+            {% if role == 'Admin' %}<li><a href="/admin">⚙️ Admin Panel</a></li>{% endif %}
+        </ul>
+        <button class="logout-btn" onclick="location.href='/logout'">Logout</button>
+    </div>
+
+    <div class="main-content">
+        <div class="header">
+            <div>
+                <h1>📈 Advanced Analytics</h1>
+                <p>Live insights across all 38 tracked locations</p>
+            </div>
+            <span class="user-role">{{ role }}</span>
+        </div>
+
+        <div class="content">
+            <div class="metrics-grid" id="metricsGrid"></div>
+
+            <div class="charts-grid">
+                <div class="chart-card">
+                    <div class="chart-title">🔴 Top 10 Most Affected Areas</div>
+                    <div class="chart-container"><canvas id="topAreasChart"></canvas></div>
+                </div>
+                <div class="chart-card">
+                    <div class="chart-title">🦠 Disease Comparison</div>
+                    <div class="chart-container"><canvas id="diseaseRadarChart"></canvas></div>
+                </div>
+                <div class="chart-card">
+                    <div class="chart-title">💧 Water Turbidity vs Cases</div>
+                    <div class="chart-container"><canvas id="waterChart"></canvas></div>
+                </div>
+                <div class="chart-card">
+                    <div class="chart-title">🌍 Cases by Region</div>
+                    <div class="chart-container"><canvas id="regionChart"></canvas></div>
+                </div>
+            </div>
+
+            <div class="table-card">
+                <div class="table-header">📋 All Tracked Locations</div>
+                <table>
+                    <thead>
+                        <tr><th>Location</th><th>Region</th><th>Total Cases</th><th>Risk Level</th><th>Water Turbidity</th><th>Mortality Rate</th><th>Last Updated</th></tr>
+                    </thead>
+                    <tbody id="locationsTableBody"><tr><td colspan="7" style="text-align:center; padding:30px;">Loading...</td></tr></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let charts = {};
+
+async function loadAnalytics() {
+    const res = await fetch('/api/analytics');
+    const data = await res.json();
+    if (!data.success) return;
+
+    document.getElementById('metricsGrid').innerHTML = `
+        <div class="metric-card"><div class="metric-label">Avg Cases / Area</div><div class="metric-value">${data.metrics.avg_cases}</div></div>
+        <div class="metric-card"><div class="metric-label">Avg Mortality Rate</div><div class="metric-value">${data.metrics.avg_mortality}%</div></div>
+        <div class="metric-card"><div class="metric-label">Critical Alert Rate</div><div class="metric-value">${data.metrics.alert_rate}%</div></div>
+        <div class="metric-card"><div class="metric-label">Most Common Disease</div><div class="metric-value" style="font-size:18px;">${data.metrics.most_common_disease}</div></div>
+    `;
+
+    // Top 10 areas
+    const ctx1 = document.getElementById('topAreasChart').getContext('2d');
+    if (charts.top) charts.top.destroy();
+    charts.top = new Chart(ctx1, {
+        type: 'bar',
+        data: {
+            labels: data.top_areas.map(a => a.name),
+            datasets: [{ label: 'Cases', data: data.top_areas.map(a => a.cases),
+                backgroundColor: data.top_areas.map(a => ({Critical:'#ff6b6b',High:'#ffd93d',Medium:'#51cf66',Low:'#4dabf7'}[a.risk])), borderRadius: 5 }]
+        },
+        options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true } } }
+    });
+
+    // Disease radar
+    const ctx2 = document.getElementById('diseaseRadarChart').getContext('2d');
+    if (charts.radar) charts.radar.destroy();
+    charts.radar = new Chart(ctx2, {
+        type: 'radar',
+        data: {
+            labels: Object.keys(data.disease_totals).map(d => d.replace('_',' ').toUpperCase()),
+            datasets: [{ label: 'Total Cases', data: Object.values(data.disease_totals),
+                backgroundColor: 'rgba(102,126,234,0.2)', borderColor: '#667eea', borderWidth: 2, pointBackgroundColor: '#667eea' }]
+        },
+        options: { responsive: true, maintainAspectRatio: false, scales: { r: { beginAtZero: true } } }
+    });
+
+    // Water vs cases bubble
+    const ctx3 = document.getElementById('waterChart').getContext('2d');
+    if (charts.water) charts.water.destroy();
+    charts.water = new Chart(ctx3, {
+        type: 'bubble',
+        data: {
+            datasets: [{ label: 'Locations',
+                data: data.water_vs_cases.map(w => ({ x: w.turbidity, y: w.cases, r: 7 })),
+                backgroundColor: data.water_vs_cases.map(w => ({Critical:'#ff6b6b',High:'#ffd93d',Medium:'#51cf66',Low:'#4dabf7'}[w.risk])) }]
+        },
+        options: { responsive: true, maintainAspectRatio: false,
+            scales: { x: { title: { display: true, text: 'Water Turbidity (NTU)' }, beginAtZero: true },
+                      y: { title: { display: true, text: 'Total Cases' }, beginAtZero: true } } }
+    });
+
+    // Region bar
+    const regions = Object.keys(data.region_summary);
+    const ctx4 = document.getElementById('regionChart').getContext('2d');
+    if (charts.region) charts.region.destroy();
+    charts.region = new Chart(ctx4, {
+        type: 'bar',
+        data: { labels: regions, datasets: [{ label: 'Cases', data: regions.map(r => data.region_summary[r].total_cases),
+            backgroundColor: ['#ff6b6b','#ffd93d','#51cf66','#4dabf7','#ff8c42','#a78bfa'], borderRadius: 5 }] },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+    });
+
+    // Table
+    const tbody = document.getElementById('locationsTableBody');
+    tbody.innerHTML = data.all_locations
+        .sort((a,b) => b.total_cases - a.total_cases)
+        .map(l => `
+        <tr>
+            <td class="cell-strong">${l.name}</td>
+            <td>${l.state} &mdash; ${l.region}</td>
+            <td class="cell-strong">${l.total_cases}</td>
+            <td><span class="risk-pill risk-${l.risk_level}">${l.risk_level}</span></td>
+            <td>${l.water_quality.turbidity} NTU</td>
+            <td>${l.mortality_rate}%</td>
+            <td style="font-size:11px; color:#999;">${l.last_updated}</td>
+        </tr>
+    `).join('');
+}
+
+loadAnalytics();
+setInterval(loadAnalytics, 60000);
+</script>
+</body>
+</html>

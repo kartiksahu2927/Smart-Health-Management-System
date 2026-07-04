@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reports - Health Watch</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f5f7fa; color: #333; }
+.container { display: flex; min-height: 100vh; }
+.sidebar { width: 250px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 25px 20px; flex-shrink: 0; }
+.sidebar-brand { font-size: 19px; font-weight: bold; margin-bottom: 26px; border-bottom: 2px solid rgba(255,255,255,0.2); padding-bottom: 14px; }
+.nav-menu { list-style: none; }
+.nav-menu li { margin-bottom: 6px; }
+.nav-menu a { color: white; text-decoration: none; display: block; padding: 11px 14px; border-radius: 8px; transition: all 0.2s; font-size: 13.5px; }
+.nav-menu a:hover, .nav-menu a.active { background: rgba(255,255,255,0.22); transform: translateX(4px); }
+.logout-btn { margin-top: 26px; width: 100%; padding: 11px; background: rgba(255,255,255,0.2); color: white; border: none; border-radius: 8px; cursor: pointer; }
+.main-content { flex: 1; overflow-y: auto; }
+.header { background: white; padding: 22px 30px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); display: flex; justify-content: space-between; align-items: center; }
+.header h1 { font-size: 24px; }
+.user-role { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 5px 14px; border-radius: 20px; font-size: 11.5px; }
+.content { padding: 28px 30px; }
+.period-tabs { display: flex; gap: 10px; margin-bottom: 22px; }
+.tab-btn { padding: 10px 22px; border: 2px solid #ddd; background: white; border-radius: 8px; cursor: pointer; font-size: 13.5px; font-weight: 600; }
+.tab-btn.active { border-color: #667eea; background: #667eea; color: white; }
+.summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 14px; margin-bottom: 24px; }
+.summary-card { background: white; padding: 18px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); text-align: center; }
+.summary-card .label { font-size: 11px; color: #888; text-transform: uppercase; margin-bottom: 6px; }
+.summary-card .value { font-size: 24px; font-weight: bold; color: #667eea; }
+.section { background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 22px; overflow: hidden; }
+.section-header { padding: 16px 20px; background: #f9f9f9; border-bottom: 2px solid #eee; font-weight: 600; font-size: 14.5px; }
+table { width: 100%; border-collapse: collapse; }
+thead th { padding: 12px 18px; text-align: left; font-size: 11.5px; color: #888; text-transform: uppercase; background: #fafafa; }
+tbody td { padding: 12px 18px; border-top: 1px solid #f0f0f0; font-size: 13px; }
+.empty-row { text-align: center; padding: 30px; color: #999; }
+.risk-pill { padding: 3px 10px; border-radius: 10px; font-size: 11px; font-weight: 600; }
+.risk-Low { background: #e3f2fd; color: #1565c0; }
+.risk-Medium { background: #fff4d6; color: #ff8c00; }
+.risk-High { background: #ffe0e0; color: #c33; }
+</style>
+</head>
+<body>
+<div class="container">
+    <div class="sidebar">
+        <div class="sidebar-brand">🏥 Health Watch</div>
+        <ul class="nav-menu">
+            <li><a href="/dashboard">📊 Dashboard</a></li>
+            <li><a href="/villages">🏘️ Villages</a></li>
+            <li><a href="/health-report">📋 Health Report</a></li>
+            <li><a href="/water-quality">💧 Water Quality</a></li>
+            <li><a href="/prediction">🤖 AI Prediction</a></li>
+            <li><a href="/map">🗺️ Map</a></li>
+            <li><a href="/analytics">📈 Analytics</a></li>
+            <li><a href="/reports" class="active">📄 Reports</a></li>
+            <li><a href="/alerts">🚨 Alerts</a></li>
+            <li><a href="/awareness">📚 Awareness</a></li>
+            {% if role == 'Admin' %}<li><a href="/admin">⚙️ Admin Panel</a></li>{% endif %}
+        </ul>
+        <button class="logout-btn" onclick="location.href='/logout'">Logout</button>
+    </div>
+
+    <div class="main-content">
+        <div class="header">
+            <h1>📄 Reports</h1>
+            <span class="user-role">{{ role }}</span>
+        </div>
+
+        <div class="content">
+            <div class="period-tabs">
+                <button class="tab-btn active" onclick="loadReport('daily', this)">Daily</button>
+                <button class="tab-btn" onclick="loadReport('weekly', this)">Weekly</button>
+                <button class="tab-btn" onclick="loadReport('monthly', this)">Monthly</button>
+            </div>
+
+            <div class="summary-grid" id="summaryGrid"></div>
+
+            <div class="section">
+                <div class="section-header">Health Reports</div>
+                <table>
+                    <thead><tr><th>Village</th><th>Date</th><th>Diarrhea</th><th>Fever</th><th>Vomiting</th><th>Typhoid</th><th>Cholera</th></tr></thead>
+                    <tbody id="reportsBody"><tr><td class="empty-row" colspan="7">Loading...</td></tr></tbody>
+                </table>
+            </div>
+
+            <div class="section">
+                <div class="section-header">Predictions</div>
+                <table>
+                    <thead><tr><th>Village</th><th>Risk Level</th><th>Confidence</th><th>Date</th></tr></thead>
+                    <tbody id="predictionsBody"><tr><td class="empty-row" colspan="4">Loading...</td></tr></tbody>
+                </table>
+            </div>
+
+            <div class="section">
+                <div class="section-header">Alerts</div>
+                <table>
+                    <thead><tr><th>Village</th><th>Type</th><th>Message</th><th>Status</th></tr></thead>
+                    <tbody id="alertsBody"><tr><td class="empty-row" colspan="4">Loading...</td></tr></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+async function loadReport(period, btn) {
+    if (btn) {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+    }
+    const res = await fetch('/api/reports?period=' + period);
+    const data = await res.json();
+    if (!data.success) return;
+
+    document.getElementById('summaryGrid').innerHTML = Object.entries(data.totals).map(([k,v]) => `
+        <div class="summary-card"><div class="label">${k}</div><div class="value">${v}</div></div>
+    `).join('') + `
+        <div class="summary-card"><div class="label">Reports</div><div class="value">${data.reports.length}</div></div>
+        <div class="summary-card"><div class="label">Alerts</div><div class="value">${data.alerts.length}</div></div>
+    `;
+
+    const rBody = document.getElementById('reportsBody');
+    rBody.innerHTML = data.reports.length ? data.reports.map(r => `
+        <tr><td>${r.village_name}</td><td>${r.report_date}</td><td>${r.diarrhea}</td><td>${r.fever}</td><td>${r.vomiting}</td><td>${r.typhoid}</td><td>${r.cholera}</td></tr>
+    `).join('') : '<tr><td class="empty-row" colspan="7">No reports in this period.</td></tr>';
+
+    const pBody = document.getElementById('predictionsBody');
+    pBody.innerHTML = data.predictions.length ? data.predictions.map(p => `
+        <tr><td>${p.village_name}</td><td><span class="risk-pill risk-${p.risk_level}">${p.risk_level}</span></td><td>${(p.probability*100).toFixed(0)}%</td><td>${p.prediction_date}</td></tr>
+    `).join('') : '<tr><td class="empty-row" colspan="4">No predictions in this period.</td></tr>';
+
+    const aBody = document.getElementById('alertsBody');
+    aBody.innerHTML = data.alerts.length ? data.alerts.map(a => `
+        <tr><td>${a.village_name}</td><td>${a.alert_type}</td><td>${a.message}</td><td>${a.status}</td></tr>
+    `).join('') : '<tr><td class="empty-row" colspan="4">No alerts in this period.</td></tr>';
+}
+
+loadReport('daily');
+</script>
+</body>
+</html>

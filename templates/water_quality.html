@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Water Quality - Health Watch</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f5f7fa; color: #333; }
+.container { display: flex; min-height: 100vh; }
+.sidebar { width: 250px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 25px 20px; flex-shrink: 0; }
+.sidebar-brand { font-size: 19px; font-weight: bold; margin-bottom: 26px; border-bottom: 2px solid rgba(255,255,255,0.2); padding-bottom: 14px; }
+.nav-menu { list-style: none; }
+.nav-menu li { margin-bottom: 6px; }
+.nav-menu a { color: white; text-decoration: none; display: block; padding: 11px 14px; border-radius: 8px; transition: all 0.2s; font-size: 13.5px; }
+.nav-menu a:hover, .nav-menu a.active { background: rgba(255,255,255,0.22); transform: translateX(4px); }
+.logout-btn { margin-top: 26px; width: 100%; padding: 11px; background: rgba(255,255,255,0.2); color: white; border: none; border-radius: 8px; cursor: pointer; }
+.main-content { flex: 1; overflow-y: auto; }
+.header { background: white; padding: 22px 30px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); display: flex; justify-content: space-between; align-items: center; }
+.header h1 { font-size: 24px; }
+.user-role { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 5px 14px; border-radius: 20px; font-size: 11.5px; }
+.content { padding: 28px 30px; display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
+@media (max-width: 900px) { .content { grid-template-columns: 1fr; } }
+.card { background: white; padding: 24px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+.card h2 { font-size: 17px; margin-bottom: 18px; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.form-group { margin-bottom: 14px; }
+label { display: block; font-size: 12.5px; font-weight: 600; margin-bottom: 5px; }
+input, select { width: 100%; padding: 10px 13px; border: 2px solid #e0e0e0; border-radius: 7px; font-size: 13.5px; font-family: inherit; }
+input:focus, select:focus { outline: none; border-color: #667eea; }
+.submit-btn { width: 100%; padding: 12px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; }
+.message { padding: 12px; border-radius: 8px; margin-bottom: 14px; display: none; font-size: 13px; }
+.message.success { background: #efe; color: #3a3; }
+.message.error { background: #fee; color: #c33; }
+.recent-item { padding: 10px 0; border-bottom: 1px solid #f0f0f0; font-size: 13px; }
+.recent-item:last-child { border-bottom: none; }
+.recent-meta { color: #999; font-size: 11.5px; }
+.bacteria-yes { color: #c33; font-weight: 600; }
+.bacteria-no { color: #3a3; font-weight: 600; }
+</style>
+</head>
+<body>
+<div class="container">
+    <div class="sidebar">
+        <div class="sidebar-brand">🏥 Health Watch</div>
+        <ul class="nav-menu">
+            <li><a href="/dashboard">📊 Dashboard</a></li>
+            <li><a href="/villages">🏘️ Villages</a></li>
+            <li><a href="/health-report">📋 Health Report</a></li>
+            <li><a href="/water-quality" class="active">💧 Water Quality</a></li>
+            <li><a href="/prediction">🤖 AI Prediction</a></li>
+            <li><a href="/map">🗺️ Map</a></li>
+            <li><a href="/analytics">📈 Analytics</a></li>
+            <li><a href="/reports">📄 Reports</a></li>
+            <li><a href="/alerts">🚨 Alerts</a></li>
+            <li><a href="/awareness">📚 Awareness</a></li>
+            {% if role == 'Admin' %}<li><a href="/admin">⚙️ Admin Panel</a></li>{% endif %}
+        </ul>
+        <button class="logout-btn" onclick="location.href='/logout'">Logout</button>
+    </div>
+
+    <div class="main-content">
+        <div class="header">
+            <h1>💧 Water Quality Monitoring</h1>
+            <span class="user-role">{{ role }}</span>
+        </div>
+
+        <div class="content">
+            <div class="card">
+                <h2>Water Testing Form</h2>
+                <div class="message" id="formMsg"></div>
+                <form id="waterForm">
+                    <div class="form-group">
+                        <label>Water Source Name</label>
+                        <input type="text" id="sourceName" placeholder="e.g., Main Well, River Point" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Village</label>
+                        <select id="village" required>
+                            <option value="">Select village</option>
+                            {% for v in villages %}
+                            <option value="{{ v.id }}">{{ v.name }}, {{ v.state }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>pH</label>
+                            <input type="number" id="ph" min="0" max="14" step="0.1" value="7.0" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Turbidity (NTU)</label>
+                            <input type="number" id="turbidity" min="0" step="0.1" value="2.0" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Temperature (°C)</label>
+                            <input type="number" id="temperature" step="0.1" value="25.0" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Bacterial Presence</label>
+                            <select id="bacteria">
+                                <option value="No">No</option>
+                                <option value="Yes">Yes</option>
+                            </select>
+                        </div>
+                    </div>
+                    <button type="submit" class="submit-btn">Submit Test Result</button>
+                </form>
+            </div>
+
+            <div class="card">
+                <h2>Recent Water Tests</h2>
+                <div id="recentList">
+                    {% if recent_tests %}
+                        {% for t in recent_tests %}
+                        <div class="recent-item">
+                            <strong>{{ t.village_name }}</strong> &mdash; {{ t.water_source_name }}<br>
+                            pH {{ t.ph }}, Turbidity {{ t.turbidity }} NTU,
+                            Bacteria: <span class="{{ 'bacteria-yes' if t.bacteria_present == 'Yes' else 'bacteria-no' }}">{{ t.bacteria_present }}</span>
+                            <div class="recent-meta">{{ t.test_date }}</div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p style="color:#999;">No water tests recorded yet.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('waterForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const payload = {
+        village_id: document.getElementById('village').value,
+        water_source_name: document.getElementById('sourceName').value,
+        ph: document.getElementById('ph').value,
+        turbidity: document.getElementById('turbidity').value,
+        temperature: document.getElementById('temperature').value,
+        bacteria_present: document.getElementById('bacteria').value
+    };
+    const res = await fetch('/api/water-quality', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    const msg = document.getElementById('formMsg');
+    if (data.success) {
+        msg.className = 'message success';
+        msg.textContent = 'Water test recorded successfully.';
+        msg.style.display = 'block';
+        document.getElementById('waterForm').reset();
+        setTimeout(() => location.reload(), 1200);
+    } else {
+        msg.className = 'message error';
+        msg.textContent = data.message || 'Submission failed.';
+        msg.style.display = 'block';
+    }
+});
+</script>
+</body>
+</html>

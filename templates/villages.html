@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Villages - Health Watch</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f5f7fa; color: #333; }
+.container { display: flex; min-height: 100vh; }
+.sidebar { width: 250px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 25px 20px; flex-shrink: 0; }
+.sidebar-brand { font-size: 19px; font-weight: bold; margin-bottom: 26px; border-bottom: 2px solid rgba(255,255,255,0.2); padding-bottom: 14px; }
+.nav-menu { list-style: none; }
+.nav-menu li { margin-bottom: 6px; }
+.nav-menu a { color: white; text-decoration: none; display: block; padding: 11px 14px; border-radius: 8px; transition: all 0.2s; font-size: 13.5px; }
+.nav-menu a:hover, .nav-menu a.active { background: rgba(255,255,255,0.22); transform: translateX(4px); }
+.logout-btn { margin-top: 26px; width: 100%; padding: 11px; background: rgba(255,255,255,0.2); color: white; border: none; border-radius: 8px; cursor: pointer; }
+.main-content { flex: 1; overflow-y: auto; }
+.header { background: white; padding: 22px 30px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); display: flex; justify-content: space-between; align-items: center; }
+.header h1 { font-size: 24px; }
+.user-role { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 5px 14px; border-radius: 20px; font-size: 11.5px; }
+.content { padding: 28px 30px; }
+.toolbar { display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; align-items: center; }
+.search-input { flex: 1; min-width: 200px; padding: 11px 15px; border: 2px solid #ddd; border-radius: 8px; font-size: 13.5px; }
+.search-input:focus { outline: none; border-color: #667eea; }
+.btn { padding: 11px 18px; border: none; border-radius: 8px; cursor: pointer; font-size: 13.5px; font-weight: 600; }
+.btn-primary { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
+.btn-secondary { background: #eee; color: #333; }
+.btn-danger { background: #ffe0e0; color: #c33; }
+.btn-small { padding: 6px 12px; font-size: 12px; }
+table { width: 100%; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.08); border-collapse: collapse; }
+thead th { background: #f5f5f5; padding: 13px 16px; text-align: left; font-size: 12px; text-transform: uppercase; color: #666; }
+tbody td { padding: 13px 16px; border-top: 1px solid #f0f0f0; font-size: 13.5px; }
+tbody tr:hover { background: #fafafe; }
+.modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 100; align-items: center; justify-content: center; }
+.modal-overlay.show { display: flex; }
+.modal { background: white; border-radius: 12px; padding: 26px; width: 100%; max-width: 460px; max-height: 90vh; overflow-y: auto; }
+.modal h3 { margin-bottom: 18px; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.form-group { margin-bottom: 14px; }
+label { display: block; font-size: 12.5px; font-weight: 600; margin-bottom: 5px; }
+input, select { width: 100%; padding: 9px 12px; border: 2px solid #e0e0e0; border-radius: 7px; font-size: 13.5px; }
+input:focus, select:focus { outline: none; border-color: #667eea; }
+.modal-actions { display: flex; gap: 10px; margin-top: 16px; }
+.message { padding: 10px; border-radius: 7px; font-size: 12.5px; margin-bottom: 14px; display: none; }
+.message.success { background: #efe; color: #3a3; }
+.message.error { background: #fee; color: #c33; }
+</style>
+</head>
+<body>
+<div class="container">
+    <div class="sidebar">
+        <div class="sidebar-brand">🏥 Health Watch</div>
+        <ul class="nav-menu">
+            <li><a href="/dashboard">📊 Dashboard</a></li>
+            <li><a href="/villages" class="active">🏘️ Villages</a></li>
+            <li><a href="/health-report">📋 Health Report</a></li>
+            <li><a href="/water-quality">💧 Water Quality</a></li>
+            <li><a href="/prediction">🤖 AI Prediction</a></li>
+            <li><a href="/map">🗺️ Map</a></li>
+            <li><a href="/analytics">📈 Analytics</a></li>
+            <li><a href="/reports">📄 Reports</a></li>
+            <li><a href="/alerts">🚨 Alerts</a></li>
+            <li><a href="/awareness">📚 Awareness</a></li>
+            {% if role == 'Admin' %}<li><a href="/admin">⚙️ Admin Panel</a></li>{% endif %}
+        </ul>
+        <button class="logout-btn" onclick="location.href='/logout'">Logout</button>
+    </div>
+
+    <div class="main-content">
+        <div class="header">
+            <h1>🏘️ Village Management</h1>
+            <span class="user-role">{{ role }}</span>
+        </div>
+
+        <div class="content">
+            <div class="toolbar">
+                <input type="text" class="search-input" id="searchBox" placeholder="Search by village name or state...">
+                <button class="btn btn-primary" onclick="openAddModal()">+ Add Village</button>
+            </div>
+
+            <table>
+                <thead>
+                    <tr><th>Name</th><th>State</th><th>Region</th><th>Population</th><th>Water Source</th><th>Actions</th></tr>
+                </thead>
+                <tbody id="villageTableBody">
+                    <tr><td colspan="6" style="text-align:center; padding:30px;">Loading...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Add/Edit Modal -->
+<div class="modal-overlay" id="modalOverlay">
+    <div class="modal">
+        <h3 id="modalTitle">Add Village</h3>
+        <div class="message" id="modalMsg"></div>
+        <form id="villageForm">
+            <input type="hidden" id="villageId">
+            <div class="form-group">
+                <label>Village / City Name</label>
+                <input type="text" id="vName" required>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>District / State</label>
+                    <input type="text" id="vState" required>
+                </div>
+                <div class="form-group">
+                    <label>Population</label>
+                    <input type="number" id="vPopulation" min="0" required>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Latitude</label>
+                    <input type="number" step="0.0001" id="vLat" required>
+                </div>
+                <div class="form-group">
+                    <label>Longitude</label>
+                    <input type="number" step="0.0001" id="vLon" required>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Primary Water Source</label>
+                <input type="text" id="vWaterSource" placeholder="e.g., River, Wells, Municipal Supply">
+            </div>
+            <div class="modal-actions">
+                <button type="submit" class="btn btn-primary" style="flex:1;">Save</button>
+                <button type="button" class="btn btn-secondary" style="flex:1;" onclick="closeModal()">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+let allVillages = [];
+
+async function loadVillages(query = '') {
+    const res = await fetch('/api/villages?q=' + encodeURIComponent(query));
+    const data = await res.json();
+    if (data.success) {
+        allVillages = data.villages;
+        renderTable(allVillages);
+    }
+}
+
+function renderTable(list) {
+    const tbody = document.getElementById('villageTableBody');
+    if (list.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:30px; color:#999;">No villages found.</td></tr>';
+        return;
+    }
+    tbody.innerHTML = list.map(v => `
+        <tr>
+            <td><strong>${v.name}</strong></td>
+            <td>${v.state}</td>
+            <td>${v.region}</td>
+            <td>${v.population ? v.population.toLocaleString() : '-'}</td>
+            <td>${v.water_source || '-'}</td>
+            <td>
+                <button class="btn btn-secondary btn-small" onclick="openEditModal(${v.id})">Edit</button>
+                <button class="btn btn-danger btn-small" onclick="deleteVillage(${v.id}, '${v.name.replace(/'/g, "")}')">Delete</button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+document.getElementById('searchBox').addEventListener('input', (e) => {
+    loadVillages(e.target.value);
+});
+
+function openAddModal() {
+    document.getElementById('modalTitle').textContent = 'Add Village';
+    document.getElementById('villageForm').reset();
+    document.getElementById('villageId').value = '';
+    document.getElementById('modalMsg').style.display = 'none';
+    document.getElementById('modalOverlay').classList.add('show');
+}
+
+function openEditModal(id) {
+    const v = allVillages.find(x => x.id === id);
+    if (!v) return;
+    document.getElementById('modalTitle').textContent = 'Edit Village';
+    document.getElementById('villageId').value = v.id;
+    document.getElementById('vName').value = v.name;
+    document.getElementById('vState').value = v.state;
+    document.getElementById('vPopulation').value = v.population || '';
+    document.getElementById('vLat').value = v.latitude;
+    document.getElementById('vLon').value = v.longitude;
+    document.getElementById('vWaterSource').value = v.water_source || '';
+    document.getElementById('modalMsg').style.display = 'none';
+    document.getElementById('modalOverlay').classList.add('show');
+}
+
+function closeModal() {
+    document.getElementById('modalOverlay').classList.remove('show');
+}
+
+document.getElementById('villageForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const id = document.getElementById('villageId').value;
+    const payload = {
+        name: document.getElementById('vName').value,
+        state: document.getElementById('vState').value,
+        district: document.getElementById('vState').value,
+        population: parseInt(document.getElementById('vPopulation').value),
+        latitude: parseFloat(document.getElementById('vLat').value),
+        longitude: parseFloat(document.getElementById('vLon').value),
+        water_source: document.getElementById('vWaterSource').value,
+        region: 'Other'
+    };
+
+    const url = id ? `/api/villages/${id}` : '/api/villages';
+    const method = id ? 'PUT' : 'POST';
+
+    const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+    const data = await res.json();
+    const msg = document.getElementById('modalMsg');
+    if (data.success) {
+        closeModal();
+        loadVillages(document.getElementById('searchBox').value);
+    } else {
+        msg.className = 'message error';
+        msg.textContent = data.message || 'Something went wrong.';
+        msg.style.display = 'block';
+    }
+});
+
+async function deleteVillage(id, name) {
+    if (!confirm(`Delete ${name}? This cannot be undone.`)) return;
+    const res = await fetch(`/api/villages/${id}`, { method: 'DELETE' });
+    const data = await res.json();
+    if (data.success) loadVillages(document.getElementById('searchBox').value);
+}
+
+loadVillages();
+</script>
+</body>
+</html>

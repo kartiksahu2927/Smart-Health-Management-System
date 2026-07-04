@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Disease Hotspot Map - Health Watch</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f5f5f5; color: #333; }
+.container { display: flex; min-height: 100vh; }
+.sidebar { width: 250px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 25px 20px; flex-shrink: 0; }
+.sidebar-brand { font-size: 19px; font-weight: bold; margin-bottom: 26px; border-bottom: 2px solid rgba(255,255,255,0.2); padding-bottom: 14px; }
+.nav-menu { list-style: none; }
+.nav-menu li { margin-bottom: 6px; }
+.nav-menu a { color: white; text-decoration: none; display: block; padding: 11px 14px; border-radius: 8px; transition: all 0.2s; font-size: 13.5px; }
+.nav-menu a:hover, .nav-menu a.active { background: rgba(255,255,255,0.22); transform: translateX(4px); }
+.logout-btn { margin-top: 26px; width: 100%; padding: 11px; background: rgba(255,255,255,0.2); color: white; border: none; border-radius: 8px; cursor: pointer; }
+.main-content { flex: 1; display: flex; flex-direction: column; }
+.top-bar { background: white; padding: 18px 28px; box-shadow: 0 2px 5px rgba(0,0,0,0.08); display: flex; justify-content: space-between; align-items: center; }
+.top-bar h1 { font-size: 22px; }
+.live-indicator { font-size: 11.5px; color: #51cf66; font-weight: 600; }
+.live-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #51cf66; margin-right: 5px; animation: pulse 2s infinite; }
+@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+.user-role { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 5px 14px; border-radius: 20px; font-size: 11.5px; }
+.content { flex: 1; display: flex; overflow: hidden; }
+.map-section { flex: 2; display: flex; flex-direction: column; }
+#map { flex: 1; background: #e5e3df; }
+.map-controls { background: white; padding: 12px 18px; border-top: 1px solid #ddd; display: flex; gap: 10px; flex-wrap: wrap; }
+.control-btn { padding: 7px 14px; background: #667eea; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 12px; transition: all 0.2s; }
+.control-btn:hover { background: #764ba2; }
+.control-btn.off { background: #ccc; color: #555; }
+.right-panel { flex: 1; max-width: 360px; background: white; border-left: 1px solid #ddd; overflow-y: auto; }
+.panel-header { padding: 18px; background: #f9f9f9; border-bottom: 2px solid #667eea; }
+.panel-header h3 { font-size: 16px; }
+.panel-header p { font-size: 11.5px; color: #888; margin-top: 4px; }
+.panel-content { padding: 18px; }
+.stats-grid { display: grid; grid-template-columns: 1fr; gap: 10px; margin-bottom: 18px; }
+.stat-card { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 12px 14px; border-radius: 10px; color: white; }
+.stat-card.critical { background: linear-gradient(135deg, #ff6b6b 0%, #ff5252 100%); }
+.stat-card h4 { font-size: 10.5px; opacity: 0.9; text-transform: uppercase; margin-bottom: 4px; }
+.stat-value { font-size: 22px; font-weight: bold; }
+.village-item { padding: 11px; border: 2px solid #eee; border-radius: 8px; cursor: pointer; margin-bottom: 10px; transition: all 0.2s; border-left: 4px solid #667eea; }
+.village-item:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.1); transform: translateX(3px); }
+.village-item.Critical, .village-item.High { border-left-color: #ff6b6b; background: #fff8f8; }
+.village-item.Medium { border-left-color: #ffd93d; background: #fffdf5; }
+.village-name { font-weight: 600; font-size: 13px; }
+.village-meta { font-size: 11px; color: #888; display: flex; justify-content: space-between; margin-top: 4px; }
+.risk-badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: 600; margin-top: 5px; }
+.risk-badge.Critical, .risk-badge.High { background: #ffe0e0; color: #c33; }
+.risk-badge.Medium { background: #fff4d6; color: #ff8c00; }
+.risk-badge.Low { background: #e3f2fd; color: #1565c0; }
+.legend { background: #fafafe; padding: 14px; border-radius: 8px; margin-top: 16px; border: 1px solid #eee; }
+.legend h4 { font-size: 12.5px; margin-bottom: 10px; }
+.legend-item { display: flex; align-items: center; gap: 8px; margin-bottom: 7px; font-size: 11.5px; }
+.legend-color { width: 16px; height: 16px; border-radius: 50%; }
+@media (max-width: 1024px) {
+    .content { flex-direction: column; }
+    .right-panel { max-width: none; max-height: 320px; border-left: none; border-top: 1px solid #ddd; }
+}
+</style>
+</head>
+<body>
+<div class="container">
+    <div class="sidebar">
+        <div class="sidebar-brand">🏥 Health Watch</div>
+        <ul class="nav-menu">
+            <li><a href="/dashboard">📊 Dashboard</a></li>
+            <li><a href="/villages">🏘️ Villages</a></li>
+            <li><a href="/health-report">📋 Health Report</a></li>
+            <li><a href="/water-quality">💧 Water Quality</a></li>
+            <li><a href="/prediction">🤖 AI Prediction</a></li>
+            <li><a href="/map" class="active">🗺️ Map</a></li>
+            <li><a href="/analytics">📈 Analytics</a></li>
+            <li><a href="/reports">📄 Reports</a></li>
+            <li><a href="/alerts">🚨 Alerts</a></li>
+            <li><a href="/awareness">📚 Awareness</a></li>
+            {% if role == 'Admin' %}<li><a href="/admin">⚙️ Admin Panel</a></li>{% endif %}
+        </ul>
+        <button class="logout-btn" onclick="location.href='/logout'">Logout</button>
+    </div>
+
+    <div class="main-content">
+        <div class="top-bar">
+            <div>
+                <h1>🗺️ Disease Hotspot Map</h1>
+                <span class="live-indicator"><span class="live-dot"></span>Live &mdash; updates each visit</span>
+            </div>
+            <span class="user-role">{{ role }}</span>
+        </div>
+
+        <div class="content">
+            <div class="map-section">
+                <div id="map"></div>
+                <div class="map-controls">
+                    <button class="control-btn" id="heatBtn" onclick="toggleHeatmap()">🔥 Heatmap</button>
+                    <button class="control-btn off" id="markerBtn" onclick="toggleMarkers()">📍 Markers</button>
+                    <button class="control-btn" onclick="fitAll()">🎯 Fit All</button>
+                    <button class="control-btn" onclick="resetView()">🔄 Reset View</button>
+                </div>
+            </div>
+
+            <div class="right-panel">
+                <div class="panel-header">
+                    <h3>High-Risk Areas</h3>
+                    <p>Click a location to fly to it on the map</p>
+                </div>
+                <div class="panel-content">
+                    <div class="stats-grid" id="statsContainer"></div>
+                    <div id="villageList"></div>
+                    <div class="legend">
+                        <h4>Risk Levels</h4>
+                        <div class="legend-item"><div class="legend-color" style="background:#ff6b6b;"></div>Critical / High</div>
+                        <div class="legend-item"><div class="legend-color" style="background:#ffd93d;"></div>Medium</div>
+                        <div class="legend-item"><div class="legend-color" style="background:#4dabf7;"></div>Low</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const map = L.map('map').setView([22.5, 80], 5);
+
+// IMPORTANT: using CartoDB Voyager tiles (not the default OpenStreetMap
+// tile set) because the default OSM tiles render place names in the
+// local script for many regions (e.g. Chinese characters over China,
+// Urdu over parts of Pakistan/Kashmir). CartoDB's basemaps render all
+// labels in Latin/English script worldwide, free, no API key needed.
+L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+    attribution: '© OpenStreetMap contributors © CARTO',
+    maxZoom: 18,
+    minZoom: 4,
+    subdomains: 'abcd'
+}).addTo(map);
+
+let heatLayer = null;
+let markersGroup = L.featureGroup();
+let heatOn = true, markersOn = false;
+
+function riskColor(level) {
+    return { Critical: '#ff6b6b', High: '#ffd93d', Medium: '#51cf66', Low: '#4dabf7' }[level] || '#4dabf7';
+}
+
+async function loadMapData() {
+    const res = await fetch('/api/map-data');
+    const data = await res.json();
+    if (!data.success) return;
+
+    renderStats(data.locations);
+    renderVillageList(data.locations);
+    renderMarkers(data.locations);
+    renderHeatmap(data.hotspots);
+}
+
+function renderStats(locations) {
+    const critical = locations.filter(l => l.risk_level === 'Critical').length;
+    const high = locations.filter(l => l.risk_level === 'High').length;
+    const totalCases = locations.reduce((s, l) => s + l.total_cases, 0);
+    document.getElementById('statsContainer').innerHTML = `
+        <div class="stat-card critical"><h4>Total Cases (Live)</h4><div class="stat-value">${totalCases.toLocaleString()}</div></div>
+        <div class="stat-card critical"><h4>Critical Areas</h4><div class="stat-value">${critical}</div></div>
+        <div class="stat-card"><h4>High Risk Areas</h4><div class="stat-value">${high}</div></div>
+    `;
+}
+
+function renderVillageList(locations) {
+    const order = { Critical: 0, High: 1, Medium: 2, Low: 3 };
+    const sorted = [...locations].sort((a,b) => order[a.risk_level] - order[b.risk_level]);
+    document.getElementById('villageList').innerHTML = sorted.slice(0, 12).map(l => `
+        <div class="village-item ${l.risk_level}" onclick="flyTo(${l.latitude}, ${l.longitude})">
+            <div class="village-name">${l.name}, ${l.state}</div>
+            <div class="village-meta"><span>${l.region}</span><span>${l.total_cases} cases</span></div>
+            <span class="risk-badge ${l.risk_level}">${l.risk_level} Risk</span>
+        </div>
+    `).join('');
+}
+
+function renderMarkers(locations) {
+    markersGroup.clearLayers();
+    locations.forEach(l => {
+        const color = riskColor(l.risk_level);
+        const marker = L.circleMarker([l.latitude, l.longitude], {
+            radius: Math.min(16, 6 + l.total_cases / 60),
+            fillColor: color, color: '#fff', weight: 2, opacity: 0.9, fillOpacity: 0.75
+        });
+        marker.bindPopup(`
+            <div style="font-size:13px; min-width:190px;">
+                <h4 style="margin-bottom:4px;">${l.name}, ${l.state}</h4>
+                <p style="color:#666; margin-bottom:6px;">${l.region} Region</p>
+                <hr style="margin-bottom:6px;">
+                <p><strong>Total Cases:</strong> ${l.total_cases}</p>
+                <p><strong>Risk Level:</strong> <span style="color:${color}; font-weight:bold;">${l.risk_level}</span></p>
+                <p><strong>Water Turbidity:</strong> ${l.water_quality.turbidity} NTU</p>
+                <p><strong>Mortality Rate:</strong> ${l.mortality_rate}%</p>
+                <p><strong>Rainfall:</strong> ${l.rainfall_mm} mm ${l.weather_source === 'live' ? '(live)' : '(estimated)'}</p>
+                <p style="color:#999; font-size:11px; margin-top:6px;">Updated ${l.last_updated}</p>
+            </div>
+        `);
+        markersGroup.addLayer(marker);
+    });
+    if (markersOn) markersGroup.addTo(map);
+}
+
+function renderHeatmap(hotspots) {
+    const points = hotspots.map(h => [h.lat, h.lng, h.intensity]);
+    if (heatLayer) map.removeLayer(heatLayer);
+    heatLayer = L.heatLayer(points, {
+        radius: 35, blur: 28, maxZoom: 13, max: 1.0,
+        gradient: { 0.2: '#4dabf7', 0.4: '#51cf66', 0.6: '#ffd93d', 0.8: '#ff8c42', 1.0: '#ff6b6b' }
+    });
+    if (heatOn) heatLayer.addTo(map);
+}
+
+function toggleHeatmap() {
+    heatOn = !heatOn;
+    document.getElementById('heatBtn').classList.toggle('off', !heatOn);
+    if (heatLayer) { heatOn ? heatLayer.addTo(map) : map.removeLayer(heatLayer); }
+}
+
+function toggleMarkers() {
+    markersOn = !markersOn;
+    document.getElementById('markerBtn').classList.toggle('off', !markersOn);
+    markersOn ? markersGroup.addTo(map) : map.removeLayer(markersGroup);
+}
+
+function flyTo(lat, lng) {
+    map.flyTo([lat, lng], 9, { duration: 1.5 });
+}
+
+function fitAll() {
+    if (markersGroup.getLayers().length) map.fitBounds(markersGroup.getBounds().pad(0.1));
+}
+
+function resetView() {
+    map.setView([22.5, 80], 5);
+}
+
+loadMapData();
+setInterval(loadMapData, 60000);
+</script>
+</body>
+</html>

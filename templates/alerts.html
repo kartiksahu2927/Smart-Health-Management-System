@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Alerts - Health Watch</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f5f7fa; color: #333; }
+.container { display: flex; min-height: 100vh; }
+.sidebar { width: 250px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 25px 20px; flex-shrink: 0; }
+.sidebar-brand { font-size: 19px; font-weight: bold; margin-bottom: 26px; border-bottom: 2px solid rgba(255,255,255,0.2); padding-bottom: 14px; }
+.nav-menu { list-style: none; }
+.nav-menu li { margin-bottom: 6px; }
+.nav-menu a { color: white; text-decoration: none; display: block; padding: 11px 14px; border-radius: 8px; transition: all 0.2s; font-size: 13.5px; }
+.nav-menu a:hover, .nav-menu a.active { background: rgba(255,255,255,0.22); transform: translateX(4px); }
+.logout-btn { margin-top: 26px; width: 100%; padding: 11px; background: rgba(255,255,255,0.2); color: white; border: none; border-radius: 8px; cursor: pointer; }
+.main-content { flex: 1; overflow-y: auto; }
+.header { background: white; padding: 22px 30px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); display: flex; justify-content: space-between; align-items: center; }
+.header h1 { font-size: 24px; }
+.user-role { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 5px 14px; border-radius: 20px; font-size: 11.5px; }
+.content { padding: 28px 30px; }
+.filter-row { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+.filter-btn { padding: 8px 16px; border: 2px solid #ddd; background: white; border-radius: 20px; cursor: pointer; font-size: 12.5px; transition: all 0.2s; }
+.filter-btn:hover, .filter-btn.active { border-color: #667eea; background: #667eea; color: white; }
+.alerts-list { display: flex; flex-direction: column; gap: 12px; }
+.alert-item { background: white; padding: 18px 20px; border-radius: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.06); border-left: 5px solid #667eea; }
+.alert-item.Critical, .alert-item.High { border-left-color: #ff6b6b; background: #fff8f8; }
+.alert-item.Medium { border-left-color: #ffd93d; background: #fffdf5; }
+.alert-item.Low { border-left-color: #4dabf7; }
+.alert-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.alert-type { background: #667eea; color: white; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+.alert-item.Critical .alert-type, .alert-item.High .alert-type { background: #ff6b6b; }
+.alert-item.Medium .alert-type { background: #ffd93d; color: #333; }
+.alert-time { font-size: 11px; color: #999; }
+.alert-msg { font-size: 13.5px; color: #444; margin-bottom: 6px; }
+.alert-bottom { display: flex; justify-content: space-between; align-items: center; font-size: 11.5px; color: #888; }
+.status-pill { padding: 3px 10px; border-radius: 10px; font-size: 11px; font-weight: 600; }
+.status-Active { background: #ffe0e0; color: #c33; }
+.status-Resolved { background: #e0ffe0; color: #3a3; }
+.resolve-btn { padding: 4px 10px; background: #eee; border: none; border-radius: 6px; cursor: pointer; font-size: 11px; }
+.empty-state { text-align: center; padding: 60px 20px; color: #999; }
+</style>
+</head>
+<body>
+<div class="container">
+    <div class="sidebar">
+        <div class="sidebar-brand">🏥 Health Watch</div>
+        <ul class="nav-menu">
+            <li><a href="/dashboard">📊 Dashboard</a></li>
+            <li><a href="/villages">🏘️ Villages</a></li>
+            <li><a href="/health-report">📋 Health Report</a></li>
+            <li><a href="/water-quality">💧 Water Quality</a></li>
+            <li><a href="/prediction">🤖 AI Prediction</a></li>
+            <li><a href="/map">🗺️ Map</a></li>
+            <li><a href="/analytics">📈 Analytics</a></li>
+            <li><a href="/reports">📄 Reports</a></li>
+            <li><a href="/alerts" class="active">🚨 Alerts</a></li>
+            <li><a href="/awareness">📚 Awareness</a></li>
+            {% if role == 'Admin' %}<li><a href="/admin">⚙️ Admin Panel</a></li>{% endif %}
+        </ul>
+        <button class="logout-btn" onclick="location.href='/logout'">Logout</button>
+    </div>
+
+    <div class="main-content">
+        <div class="header">
+            <h1>🚨 Alerts</h1>
+            <span class="user-role">{{ role }}</span>
+        </div>
+
+        <div class="content">
+            <div class="filter-row">
+                <button class="filter-btn active" onclick="setFilter('all', this)">All Alerts</button>
+                <button class="filter-btn" onclick="setFilter('live', this)">Live Risk Monitor</button>
+                <button class="filter-btn" onclick="setFilter('manual', this)">Reported Alerts</button>
+            </div>
+            <div class="alerts-list" id="alertsList">
+                <div class="empty-state">Loading alerts...</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let liveAlerts = [], manualAlerts = [];
+let currentFilter = 'all';
+
+async function loadAlerts() {
+    const res = await fetch('/api/alerts');
+    const data = await res.json();
+    if (data.success) {
+        liveAlerts = data.live_alerts;
+        manualAlerts = data.alerts;
+        render();
+    }
+}
+
+function setFilter(f, btn) {
+    currentFilter = f;
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    render();
+}
+
+function timeAgo(dateStr) {
+    const date = new Date(dateStr);
+    const seconds = Math.floor((new Date() - date) / 1000);
+    if (isNaN(seconds)) return dateStr;
+    if (seconds < 60) return 'Just now';
+    if (seconds < 3600) return Math.floor(seconds/60) + ' min ago';
+    if (seconds < 86400) return Math.floor(seconds/3600) + ' hr ago';
+    return Math.floor(seconds/86400) + ' days ago';
+}
+
+function render() {
+    const list = document.getElementById('alertsList');
+    let items = [];
+    if (currentFilter === 'all' || currentFilter === 'live') items = items.concat(liveAlerts);
+    if (currentFilter === 'all' || currentFilter === 'manual') items = items.concat(manualAlerts);
+
+    if (items.length === 0) {
+        list.innerHTML = '<div class="empty-state">✓ No alerts in this category.</div>';
+        return;
+    }
+
+    list.innerHTML = items.map(a => {
+        const severity = a.severity || a.alert_type || 'Medium';
+        const cssClass = a.severity || (a.alert_type && a.alert_type.includes('Risk') ? 'High' : 'Medium');
+        const resolveBtn = a.id && !String(a.id).startsWith('live-') && a.status === 'Active'
+            ? `<button class="resolve-btn" onclick="resolveAlert(${a.id})">Mark Resolved</button>` : '';
+        return `
+        <div class="alert-item ${cssClass}">
+            <div class="alert-top">
+                <span class="alert-type">${a.alert_type}</span>
+                <span class="alert-time">${timeAgo(a.alert_date)}</span>
+            </div>
+            <div class="alert-msg"><strong>${a.village_name}, ${a.state || ''}</strong> &mdash; ${a.message}</div>
+            <div class="alert-bottom">
+                <span class="status-pill status-${a.status}">${a.status}</span>
+                ${resolveBtn}
+            </div>
+        </div>`;
+    }).join('');
+}
+
+async function resolveAlert(id) {
+    await fetch(`/api/alerts/${id}/resolve`, { method: 'POST' });
+    loadAlerts();
+}
+
+loadAlerts();
+setInterval(loadAlerts, 30000);
+</script>
+</body>
+</html>

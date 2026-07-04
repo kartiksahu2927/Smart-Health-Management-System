@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Prediction - Health Watch</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f5f7fa; color: #333; }
+.container { display: flex; min-height: 100vh; }
+.sidebar { width: 250px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 25px 20px; flex-shrink: 0; }
+.sidebar-brand { font-size: 19px; font-weight: bold; margin-bottom: 26px; border-bottom: 2px solid rgba(255,255,255,0.2); padding-bottom: 14px; }
+.nav-menu { list-style: none; }
+.nav-menu li { margin-bottom: 6px; }
+.nav-menu a { color: white; text-decoration: none; display: block; padding: 11px 14px; border-radius: 8px; transition: all 0.2s; font-size: 13.5px; }
+.nav-menu a:hover, .nav-menu a.active { background: rgba(255,255,255,0.22); transform: translateX(4px); }
+.logout-btn { margin-top: 26px; width: 100%; padding: 11px; background: rgba(255,255,255,0.2); color: white; border: none; border-radius: 8px; cursor: pointer; }
+.main-content { flex: 1; overflow-y: auto; }
+.header { background: white; padding: 22px 30px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); display: flex; justify-content: space-between; align-items: center; }
+.header h1 { font-size: 24px; }
+.user-role { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 5px 14px; border-radius: 20px; font-size: 11.5px; }
+.content { padding: 28px 30px; display: grid; grid-template-columns: 1fr 1fr; gap: 22px; align-items: start; }
+@media (max-width: 900px) { .content { grid-template-columns: 1fr; } }
+.card { background: white; padding: 24px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+.card h2 { font-size: 17px; margin-bottom: 8px; }
+.card p.sub { color: #777; font-size: 12.5px; margin-bottom: 18px; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.form-group { margin-bottom: 14px; }
+label { display: block; font-size: 12.5px; font-weight: 600; margin-bottom: 5px; }
+input, select { width: 100%; padding: 10px 13px; border: 2px solid #e0e0e0; border-radius: 7px; font-size: 13.5px; }
+input:focus, select:focus { outline: none; border-color: #667eea; }
+.submit-btn { width: 100%; padding: 12px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; }
+.result-box { text-align: center; padding: 30px 20px; border-radius: 12px; margin-top: 10px; }
+.result-box.Low { background: #e3f2fd; }
+.result-box.Medium { background: #fffbf0; }
+.result-box.High { background: #ffe0e0; }
+.result-level { font-size: 32px; font-weight: bold; margin-bottom: 6px; }
+.result-level.Low { color: #1565c0; }
+.result-level.Medium { color: #ff8c00; }
+.result-level.High { color: #c33; }
+.result-conf { color: #666; font-size: 13px; }
+.prob-bars { margin-top: 16px; }
+.prob-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; font-size: 12px; }
+.prob-label { width: 60px; }
+.prob-track { flex: 1; height: 10px; background: #eee; border-radius: 5px; overflow: hidden; }
+.prob-fill { height: 100%; border-radius: 5px; }
+.importance-list { margin-top: 18px; font-size: 12.5px; color: #666; }
+.empty-state { color: #999; text-align: center; padding: 40px 20px; }
+</style>
+</head>
+<body>
+<div class="container">
+    <div class="sidebar">
+        <div class="sidebar-brand">🏥 Health Watch</div>
+        <ul class="nav-menu">
+            <li><a href="/dashboard">📊 Dashboard</a></li>
+            <li><a href="/villages">🏘️ Villages</a></li>
+            <li><a href="/health-report">📋 Health Report</a></li>
+            <li><a href="/water-quality">💧 Water Quality</a></li>
+            <li><a href="/prediction" class="active">🤖 AI Prediction</a></li>
+            <li><a href="/map">🗺️ Map</a></li>
+            <li><a href="/analytics">📈 Analytics</a></li>
+            <li><a href="/reports">📄 Reports</a></li>
+            <li><a href="/alerts">🚨 Alerts</a></li>
+            <li><a href="/awareness">📚 Awareness</a></li>
+            {% if role == 'Admin' %}<li><a href="/admin">⚙️ Admin Panel</a></li>{% endif %}
+        </ul>
+        <button class="logout-btn" onclick="location.href='/logout'">Logout</button>
+    </div>
+
+    <div class="main-content">
+        <div class="header">
+            <h1>🤖 AI Outbreak Risk Prediction</h1>
+            <span class="user-role">{{ role }}</span>
+        </div>
+
+        <div class="content">
+            <div class="card">
+                <h2>Predict Outbreak Risk</h2>
+                <p class="sub">Random Forest model trained on symptoms, water turbidity, and rainfall.</p>
+                <form id="predictForm">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Diarrhea Cases</label>
+                            <input type="number" id="diarrhea" min="0" value="3" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Fever Cases</label>
+                            <input type="number" id="fever" min="0" value="2" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Water Turbidity (NTU)</label>
+                            <input type="number" id="turbidity" min="0" step="0.1" value="4.0" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Recent Rainfall (mm)</label>
+                            <input type="number" id="rainfall" min="0" step="0.1" value="150" required>
+                        </div>
+                    </div>
+                    <button type="submit" class="submit-btn">Predict Risk</button>
+                </form>
+            </div>
+
+            <div class="card">
+                <h2>Prediction Result</h2>
+                <div id="resultArea">
+                    <div class="empty-state">Fill in the form and click "Predict Risk" to see results here.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('predictForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const payload = {
+        diarrhea: document.getElementById('diarrhea').value,
+        fever: document.getElementById('fever').value,
+        turbidity: document.getElementById('turbidity').value,
+        rainfall: document.getElementById('rainfall').value
+    };
+    const res = await fetch('/api/predict', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    const area = document.getElementById('resultArea');
+
+    if (data.success) {
+        const r = data.result;
+        const fi = data.feature_importance;
+        area.innerHTML = `
+            <div class="result-box ${r.risk_level}">
+                <div class="result-level ${r.risk_level}">${r.risk_level} Risk</div>
+                <div class="result-conf">Confidence: ${(r.confidence * 100).toFixed(0)}%</div>
+                <div class="prob-bars">
+                    <div class="prob-row"><span class="prob-label">Low</span><div class="prob-track"><div class="prob-fill" style="width:${r.probabilities.low*100}%; background:#4dabf7;"></div></div><span>${(r.probabilities.low*100).toFixed(0)}%</span></div>
+                    <div class="prob-row"><span class="prob-label">Medium</span><div class="prob-track"><div class="prob-fill" style="width:${r.probabilities.medium*100}%; background:#ffd93d;"></div></div><span>${(r.probabilities.medium*100).toFixed(0)}%</span></div>
+                    <div class="prob-row"><span class="prob-label">High</span><div class="prob-track"><div class="prob-fill" style="width:${r.probabilities.high*100}%; background:#ff6b6b;"></div></div><span>${(r.probabilities.high*100).toFixed(0)}%</span></div>
+                </div>
+            </div>
+            <div class="importance-list">
+                <strong>What influenced this prediction most:</strong><br>
+                ${Object.entries(fi).sort((a,b)=>b[1]-a[1]).map(([k,v]) => `${k}: ${(v*100).toFixed(0)}%`).join(' &middot; ')}
+            </div>
+        `;
+    } else {
+        area.innerHTML = `<div class="empty-state">Prediction failed: ${data.message}</div>`;
+    }
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Awareness - Health Watch</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f5f7fa; color: #333; }
+.container { display: flex; min-height: 100vh; }
+.sidebar { width: 250px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 25px 20px; flex-shrink: 0; }
+.sidebar-brand { font-size: 19px; font-weight: bold; margin-bottom: 26px; border-bottom: 2px solid rgba(255,255,255,0.2); padding-bottom: 14px; }
+.nav-menu { list-style: none; }
+.nav-menu li { margin-bottom: 6px; }
+.nav-menu a { color: white; text-decoration: none; display: block; padding: 11px 14px; border-radius: 8px; transition: all 0.2s; font-size: 13.5px; }
+.nav-menu a:hover, .nav-menu a.active { background: rgba(255,255,255,0.22); transform: translateX(4px); }
+.logout-btn { margin-top: 26px; width: 100%; padding: 11px; background: rgba(255,255,255,0.2); color: white; border: none; border-radius: 8px; cursor: pointer; }
+.main-content { flex: 1; overflow-y: auto; }
+.header { background: white; padding: 22px 30px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); display: flex; justify-content: space-between; align-items: center; }
+.header h1 { font-size: 24px; }
+.user-role { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 5px 14px; border-radius: 20px; font-size: 11.5px; }
+.content { padding: 28px 30px; }
+.disease-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 18px; margin-bottom: 26px; }
+.disease-card { background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); overflow: hidden; }
+.card-header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 16px 20px; font-size: 20px; }
+.card-body { padding: 18px 20px; }
+.card-body h4 { font-size: 13px; margin-bottom: 8px; color: #555; }
+.card-body p { font-size: 13px; color: #666; margin-bottom: 10px; line-height: 1.5; }
+.card-body ul { margin-left: 18px; font-size: 12.5px; color: #666; line-height: 1.8; }
+.tips-section { background: white; padding: 24px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 22px; }
+.tips-section h2 { font-size: 18px; margin-bottom: 18px; }
+.dos-donts { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+@media (max-width: 700px) { .dos-donts { grid-template-columns: 1fr; } }
+.do-box, .dont-box { padding: 18px; border-radius: 10px; }
+.do-box { background: #e8f9ee; border-left: 4px solid #28a745; }
+.dont-box { background: #fdecec; border-left: 4px solid #dc3545; }
+.do-box h4, .dont-box h4 { margin-bottom: 12px; font-size: 14px; }
+.do-box ul, .dont-box ul { list-style: none; font-size: 12.5px; line-height: 2; color: #444; }
+.do-box li:before { content: "✓ "; color: #28a745; font-weight: bold; }
+.dont-box li:before { content: "✗ "; color: #dc3545; font-weight: bold; }
+.tip { padding: 13px; background: #fafafe; border-left: 4px solid #667eea; margin-bottom: 12px; border-radius: 7px; font-size: 13px; }
+.contact-section { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 26px; border-radius: 12px; text-align: center; }
+.contact-section h3 { margin-bottom: 16px; }
+.contact-info { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; }
+.contact-item { background: rgba(255,255,255,0.15); padding: 14px; border-radius: 8px; font-size: 13px; }
+</style>
+</head>
+<body>
+<div class="container">
+    <div class="sidebar">
+        <div class="sidebar-brand">🏥 Health Watch</div>
+        <ul class="nav-menu">
+            <li><a href="/dashboard">📊 Dashboard</a></li>
+            <li><a href="/villages">🏘️ Villages</a></li>
+            <li><a href="/health-report">📋 Health Report</a></li>
+            <li><a href="/water-quality">💧 Water Quality</a></li>
+            <li><a href="/prediction">🤖 AI Prediction</a></li>
+            <li><a href="/map">🗺️ Map</a></li>
+            <li><a href="/analytics">📈 Analytics</a></li>
+            <li><a href="/reports">📄 Reports</a></li>
+            <li><a href="/alerts">🚨 Alerts</a></li>
+            <li><a href="/awareness" class="active">📚 Awareness</a></li>
+            {% if role == 'Admin' %}<li><a href="/admin">⚙️ Admin Panel</a></li>{% endif %}
+        </ul>
+        <button class="logout-btn" onclick="location.href='/logout'">Logout</button>
+    </div>
+
+    <div class="main-content">
+        <div class="header">
+            <h1>📚 Health Awareness</h1>
+            <span class="user-role">{{ role }}</span>
+        </div>
+
+        <div class="content">
+            <div class="disease-grid">
+                <div class="disease-card">
+                    <div class="card-header">🦠 Cholera</div>
+                    <div class="card-body">
+                        <p>A severe diarrheal disease caused by contaminated food or water.</p>
+                        <h4>Symptoms</h4>
+                        <ul><li>Sudden watery diarrhea</li><li>Severe dehydration</li><li>Vomiting</li><li>Rapid heart rate</li></ul>
+                    </div>
+                </div>
+                <div class="disease-card">
+                    <div class="card-header">🌡️ Typhoid</div>
+                    <div class="card-body">
+                        <p>Caused by bacteria in contaminated water or food.</p>
+                        <h4>Symptoms</h4>
+                        <ul><li>High fever (up to 40°C)</li><li>Headache and body aches</li><li>Weakness, abdominal pain</li></ul>
+                    </div>
+                </div>
+                <div class="disease-card">
+                    <div class="card-header">💧 Diarrhea</div>
+                    <div class="card-body">
+                        <p>Most common in areas with poor sanitation.</p>
+                        <h4>Symptoms</h4>
+                        <ul><li>Loose, watery stools</li><li>Abdominal cramping</li><li>Dehydration signs</li></ul>
+                    </div>
+                </div>
+                <div class="disease-card">
+                    <div class="card-header">🦠 Hepatitis A</div>
+                    <div class="card-body">
+                        <p>Viral infection affecting the liver, spread through contaminated water.</p>
+                        <h4>Symptoms</h4>
+                        <ul><li>Jaundice</li><li>Dark urine</li><li>Fatigue and weakness</li></ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tips-section">
+                <h2>🛡️ Prevention Guidelines</h2>
+                <div class="dos-donts">
+                    <div class="do-box">
+                        <h4>✓ DO's</h4>
+                        <ul><li>Boil water before drinking</li><li>Wash hands with soap frequently</li><li>Keep food covered</li><li>Get vaccinated where available</li><li>Use clean toilet facilities</li></ul>
+                    </div>
+                    <div class="dont-box">
+                        <h4>✗ DON'Ts</h4>
+                        <ul><li>Don't drink untreated water</li><li>Don't eat undercooked food</li><li>Don't practice open defecation</li><li>Don't ignore symptoms</li><li>Don't store water too long</li></ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tips-section">
+                <h2>💧 Safe Water Practices</h2>
+                <div class="tip"><strong>Boiling:</strong> Heat water to 100°C for at least 1 minute to kill pathogens.</div>
+                <div class="tip"><strong>Chlorination:</strong> Add 2-3 drops of food-grade bleach per liter, wait 30 minutes.</div>
+                <div class="tip"><strong>Storage:</strong> Store water in clean, covered containers; don't keep more than 24 hours untreated.</div>
+                <div class="tip"><strong>Testing:</strong> pH should be 6.5-8.5; chlorine residual should be 0.5-1.0 mg/L.</div>
+            </div>
+
+            <div class="contact-section">
+                <h3>Emergency Contacts</h3>
+                <div class="contact-info">
+                    <div class="contact-item"><strong>Ambulance:</strong><br>108</div>
+                    <div class="contact-item"><strong>Health Helpline:</strong><br>1800-HEALTH-1</div>
+                    <div class="contact-item"><strong>Report Issues:</strong><br>Contact your local ASHA worker</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

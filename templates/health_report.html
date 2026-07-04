@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Health Report - Health Watch</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f5f7fa; color: #333; }
+.container { display: flex; min-height: 100vh; }
+.sidebar { width: 250px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 25px 20px; flex-shrink: 0; }
+.sidebar-brand { font-size: 19px; font-weight: bold; margin-bottom: 26px; border-bottom: 2px solid rgba(255,255,255,0.2); padding-bottom: 14px; }
+.nav-menu { list-style: none; }
+.nav-menu li { margin-bottom: 6px; }
+.nav-menu a { color: white; text-decoration: none; display: block; padding: 11px 14px; border-radius: 8px; transition: all 0.2s; font-size: 13.5px; }
+.nav-menu a:hover, .nav-menu a.active { background: rgba(255,255,255,0.22); transform: translateX(4px); }
+.logout-btn { margin-top: 26px; width: 100%; padding: 11px; background: rgba(255,255,255,0.2); color: white; border: none; border-radius: 8px; cursor: pointer; }
+.main-content { flex: 1; overflow-y: auto; }
+.header { background: white; padding: 22px 30px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); display: flex; justify-content: space-between; align-items: center; }
+.header h1 { font-size: 24px; }
+.user-role { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 5px 14px; border-radius: 20px; font-size: 11.5px; }
+.content { padding: 28px 30px; display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
+@media (max-width: 900px) { .content { grid-template-columns: 1fr; } }
+.card { background: white; padding: 24px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+.card h2 { font-size: 17px; margin-bottom: 18px; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.form-group { margin-bottom: 14px; }
+label { display: block; font-size: 12.5px; font-weight: 600; margin-bottom: 5px; }
+input, select, textarea { width: 100%; padding: 10px 13px; border: 2px solid #e0e0e0; border-radius: 7px; font-size: 13.5px; font-family: inherit; }
+input:focus, select:focus, textarea:focus { outline: none; border-color: #667eea; }
+.submit-btn { width: 100%; padding: 12px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; }
+.message { padding: 12px; border-radius: 8px; margin-bottom: 14px; display: none; font-size: 13px; }
+.message.success { background: #efe; color: #3a3; }
+.message.error { background: #fee; color: #c33; }
+.risk-banner { padding: 14px; border-radius: 8px; margin-top: 14px; display: none; font-weight: 600; text-align: center; }
+.risk-banner.Low { background: #e3f2fd; color: #1565c0; }
+.risk-banner.Medium { background: #fffbf0; color: #ff8c00; }
+.risk-banner.High { background: #ffe0e0; color: #c33; }
+.recent-list { font-size: 13px; }
+.recent-item { padding: 10px 0; border-bottom: 1px solid #f0f0f0; display: flex; justify-content: space-between; }
+.recent-item:last-child { border-bottom: none; }
+.recent-meta { color: #999; font-size: 11.5px; }
+</style>
+</head>
+<body>
+<div class="container">
+    <div class="sidebar">
+        <div class="sidebar-brand">🏥 Health Watch</div>
+        <ul class="nav-menu">
+            <li><a href="/dashboard">📊 Dashboard</a></li>
+            <li><a href="/villages">🏘️ Villages</a></li>
+            <li><a href="/health-report" class="active">📋 Health Report</a></li>
+            <li><a href="/water-quality">💧 Water Quality</a></li>
+            <li><a href="/prediction">🤖 AI Prediction</a></li>
+            <li><a href="/map">🗺️ Map</a></li>
+            <li><a href="/analytics">📈 Analytics</a></li>
+            <li><a href="/reports">📄 Reports</a></li>
+            <li><a href="/alerts">🚨 Alerts</a></li>
+            <li><a href="/awareness">📚 Awareness</a></li>
+            {% if role == 'Admin' %}<li><a href="/admin">⚙️ Admin Panel</a></li>{% endif %}
+        </ul>
+        <button class="logout-btn" onclick="location.href='/logout'">Logout</button>
+    </div>
+
+    <div class="main-content">
+        <div class="header">
+            <h1>📋 Health Reporting</h1>
+            <span class="user-role">{{ role }}</span>
+        </div>
+
+        <div class="content">
+            <div class="card">
+                <h2>Report Symptoms</h2>
+                <div class="message" id="formMsg"></div>
+                <form id="reportForm">
+                    <div class="form-group">
+                        <label>Village</label>
+                        <select id="village" required>
+                            <option value="">Select village</option>
+                            {% for v in villages %}
+                            <option value="{{ v.id }}">{{ v.name }}, {{ v.state }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Diarrhea Cases</label>
+                            <input type="number" id="diarrhea" min="0" value="0" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Fever Cases</label>
+                            <input type="number" id="fever" min="0" value="0" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Vomiting Cases</label>
+                            <input type="number" id="vomiting" min="0" value="0" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Typhoid Cases</label>
+                            <input type="number" id="typhoid" min="0" value="0" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Cholera Cases</label>
+                        <input type="number" id="cholera" min="0" value="0" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Additional Notes</label>
+                        <textarea id="notes" rows="3" placeholder="Any other observations..."></textarea>
+                    </div>
+                    <button type="submit" class="submit-btn">Submit Report</button>
+                </form>
+                <div class="risk-banner" id="riskBanner"></div>
+            </div>
+
+            <div class="card">
+                <h2>Recent Reports</h2>
+                <div class="recent-list" id="recentList">
+                    {% if recent_reports %}
+                        {% for r in recent_reports %}
+                        <div class="recent-item">
+                            <span><strong>{{ r.village_name }}</strong> &mdash; Diarrhea: {{ r.diarrhea }}, Fever: {{ r.fever }}</span>
+                            <span class="recent-meta">{{ r.report_date }}</span>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p style="color:#999;">No reports submitted yet.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('reportForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const payload = {
+        village_id: document.getElementById('village').value,
+        diarrhea: document.getElementById('diarrhea').value,
+        fever: document.getElementById('fever').value,
+        vomiting: document.getElementById('vomiting').value,
+        typhoid: document.getElementById('typhoid').value,
+        cholera: document.getElementById('cholera').value,
+        notes: document.getElementById('notes').value
+    };
+
+    const res = await fetch('/api/health-report', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    const msg = document.getElementById('formMsg');
+    const banner = document.getElementById('riskBanner');
+
+    if (data.success) {
+        msg.className = 'message success';
+        msg.textContent = 'Report submitted successfully.';
+        msg.style.display = 'block';
+        banner.className = 'risk-banner ' + data.risk_level;
+        banner.textContent = `AI Prediction: ${data.risk_level} Risk (confidence ${(data.confidence*100).toFixed(0)}%)`;
+        banner.style.display = 'block';
+        document.getElementById('reportForm').reset();
+        setTimeout(() => location.reload(), 1800);
+    } else {
+        msg.className = 'message error';
+        msg.textContent = data.message || 'Submission failed.';
+        msg.style.display = 'block';
+    }
+});
+</script>
+</body>
+</html>
